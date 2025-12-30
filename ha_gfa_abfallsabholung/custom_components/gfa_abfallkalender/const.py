@@ -20,13 +20,14 @@ DEFAULT_REMINDER_DAYS_BEFORE = 1
 DEFAULT_SCAN_INTERVAL = timedelta(hours=6)
 
 # Waste type mappings (German) - Keywords must be lowercase!
+# GFA Lüneburg uses: Biotonne, Gelbe Tonne, Gruenabfall, Papiertonne, Restmuell, Sperrmuell Altmetall
 WASTE_TYPE_MAPPINGS = {
-    "restmuell": ["restmüll", "restabfall", "restabfallbehälter", "restabfallbehaelter", "hausmüll", "schwarze tonne"],
+    "restmuell": ["restmüll", "restmuell", "restabfall", "restabfallbehälter", "restabfallbehaelter", "hausmüll", "schwarze tonne"],
     "altpapier": ["altpapier", "papier", "pappe", "papiertonne", "blaue tonne"],
     "gelber_sack": ["gelber sack", "gelbe tonne", "gelbe sack", "verpackungen", "leichtverpackungen", "wertstoffe"],
     "biotonne": ["biotonne", "bioabfall", "grüne tonne", "kompost", "bio"],
     "gruenabfall": ["grünabfall", "gruenabfall", "gartenabfall", "laub"],
-    "sperrmuell": ["sperrmüll", "sperrmuell", "sperrgut", "altmetall"],
+    "sperrmuell": ["sperrmüll", "sperrmuell", "sperrgut", "altmetall", "sperrmuell altmetall"],
     "schadstoffmobil": ["schadstoffmobil", "schadstoffe", "problemstoffe"],
     "weihnachtsbaum": ["weihnachtsbaum", "christbaum", "tannenbaum"],
 }
