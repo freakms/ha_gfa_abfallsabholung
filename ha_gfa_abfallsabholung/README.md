@@ -1,7 +1,7 @@
 # GFA Abfallkalender - Home Assistant Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/your-username/gfa_abfallkalender.svg)](https://github.com/your-username/gfa_abfallkalender/releases)
+[![GitHub Release](https://img.shields.io/github/release/freakms/ha_gfa_abfallsabholung.svg)](https://github.com/freakms/ha_gfa_abfallsabholung/releases)
 
 Eine Home Assistant Integration für den Abfallkalender der GFA Lüneburg. Die Integration lädt Abfalltermine direkt von der GFA-Webseite und kann automatische Alexa-Ansagen durchführen.
 
