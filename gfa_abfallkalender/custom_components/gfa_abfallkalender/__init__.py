@@ -9,7 +9,9 @@ from homeassistant.helpers.event import async_track_time_change
 
 from .const import (
     DOMAIN,
-    CONF_ICS_URL,
+    CONF_CITY,
+    CONF_STREET,
+    CONF_HOUSE_NUMBER,
     CONF_REMINDER_TIME,
     CONF_REMINDER_DAYS_BEFORE,
     CONF_ALEXA_ENTITY,
@@ -17,7 +19,6 @@ from .const import (
     SERVICE_ANNOUNCE,
     SERVICE_REFRESH,
     WASTE_TYPE_NAMES,
-    PLATFORMS,
 )
 from .coordinator import GFADataCoordinator
 
@@ -30,11 +31,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GFA Abfallkalender from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    # Create coordinator
-    coordinator = GFADataCoordinator(
-        hass,
-        entry.data[CONF_ICS_URL],
-    )
+    # Create coordinator with config data
+    coordinator = GFADataCoordinator(hass, entry.data)
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -60,7 +58,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _setup_reminder(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Set up the daily reminder."""
     reminder_time_str = entry.data.get(CONF_REMINDER_TIME, "19:00")
-    hour, minute = map(int, reminder_time_str.split(":"))
+    
+    # Handle both string and dict formats for time
+    if isinstance(reminder_time_str, dict):
+        hour = reminder_time_str.get("hour", 19)
+        minute = reminder_time_str.get("minute", 0)
+    else:
+        hour, minute = map(int, reminder_time_str.split(":"))
 
     async def _reminder_callback(now: datetime) -> None:
         """Handle reminder callback."""
@@ -116,7 +120,9 @@ async def _announce_tomorrow_pickups(hass: HomeAssistant, entry: ConfigEntry) ->
     waste_names = []
     for pickup in filtered_pickups:
         waste_type = pickup.get("waste_type")
-        friendly_name = WASTE_TYPE_NAMES.get(waste_type, pickup.get("summary", waste_type))
+        friendly_name = WASTE_TYPE_NAMES.get(
+            waste_type, pickup.get("summary", waste_type)
+        )
         waste_names.append(friendly_name)
 
     if days_before == 1:
@@ -126,18 +132,39 @@ async def _announce_tomorrow_pickups(hass: HomeAssistant, entry: ConfigEntry) ->
     else:
         day_text = f"in {days_before} Tagen"
 
-    waste_list = ", ".join(waste_names[:-1]) + " und " + waste_names[-1] if len(waste_names) > 1 else waste_names[0]
-    
+    if len(waste_names) > 1:
+        waste_list = ", ".join(waste_names[:-1]) + " und " + waste_names[-1]
+    else:
+        waste_list = waste_names[0]
+
     message = f"Abholtermin der GFA {day_text}. Abgeholt wird {waste_list}. Alexa Stop."
 
     _LOGGER.info(f"Announcing: {message}")
 
     # Call Alexa Media Player notify service
-    await hass.services.async_call(
-        "notify",
-        alexa_entity.replace("media_player.", "alexa_media_"),
-        {"message": message, "data": {"type": "announce"}},
-    )
+    # Try different service naming patterns
+    alexa_service_name = alexa_entity.replace("media_player.", "alexa_media_")
+    
+    try:
+        await hass.services.async_call(
+            "notify",
+            alexa_service_name,
+            {"message": message, "data": {"type": "announce"}},
+        )
+    except Exception as e:
+        _LOGGER.warning(f"Failed to call notify service: {e}")
+        # Try alternative: media_player.play_media for TTS
+        try:
+            await hass.services.async_call(
+                "tts",
+                "speak",
+                {
+                    "entity_id": alexa_entity,
+                    "message": message,
+                },
+            )
+        except Exception as e2:
+            _LOGGER.error(f"Failed to announce via TTS: {e2}")
 
 
 async def _register_services(hass: HomeAssistant) -> None:
@@ -169,6 +196,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Cancel reminder
     if unsub := hass.data[DOMAIN][entry.entry_id].get("unsub_reminder"):
         unsub()
+
+    # Close API session
+    coordinator = hass.data[DOMAIN][entry.entry_id].get("coordinator")
+    if coordinator:
+        await coordinator.async_close()
 
     # Unload platforms
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS_LIST)
