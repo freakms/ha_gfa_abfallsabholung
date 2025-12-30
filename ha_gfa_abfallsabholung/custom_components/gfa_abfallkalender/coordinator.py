@@ -51,6 +51,10 @@ class GFADataCoordinator(DataUpdateCoordinator):
         try:
             if self._use_api:
                 # Fetch ICS using the API with address
+                _LOGGER.debug(
+                    f"Fetching calendar for {self._config[CONF_CITY]}, "
+                    f"{self._config[CONF_STREET]} {self._config[CONF_HOUSE_NUMBER]}"
+                )
                 ics_content = await self._api.get_ics_calendar(
                     self._config[CONF_CITY],
                     self._config[CONF_STREET],
@@ -69,12 +73,21 @@ class GFADataCoordinator(DataUpdateCoordinator):
                             )
                         ics_content = await response.text()
 
+            _LOGGER.debug(f"Received ICS content: {len(ics_content)} bytes")
+            
+            # Check if we got valid ICS content
+            if "BEGIN:VCALENDAR" not in ics_content:
+                _LOGGER.error("Invalid ICS content received (no VCALENDAR)")
+                raise UpdateFailed("Invalid calendar data received")
+
             # Parse calendar
             self._calendar = Calendar.from_ical(ics_content)
 
-            # Get events for the next 60 days
+            # Get events for the next 365 days (full year ahead)
             start_date = datetime.now().date()
-            end_date = start_date + timedelta(days=60)
+            end_date = start_date + timedelta(days=365)
+
+            _LOGGER.debug(f"Looking for events between {start_date} and {end_date}")
 
             events = recurring_ical_events.of(self._calendar).between(
                 start_date, end_date
@@ -86,8 +99,14 @@ class GFADataCoordinator(DataUpdateCoordinator):
                 if event_data:
                     self._events.append(event_data)
 
+            _LOGGER.info(f"Found {len(self._events)} upcoming waste collection events")
+
             # Sort events by date
             self._events.sort(key=lambda x: x["date"])
+
+            # Log first few events for debugging
+            if self._events:
+                _LOGGER.debug(f"Next events: {self._events[:5]}")
 
             # Group events by waste type
             waste_data = {}
@@ -97,6 +116,8 @@ class GFADataCoordinator(DataUpdateCoordinator):
                     waste_data[waste_type] = []
                 waste_data[waste_type].append(event)
 
+            _LOGGER.debug(f"Waste types found: {list(waste_data.keys())}")
+
             return {
                 "events": self._events,
                 "by_type": waste_data,
@@ -104,7 +125,7 @@ class GFADataCoordinator(DataUpdateCoordinator):
             }
 
         except Exception as err:
-            _LOGGER.error(f"Error updating calendar data: {err}")
+            _LOGGER.error(f"Error updating calendar data: {err}", exc_info=True)
             raise UpdateFailed(f"Error fetching calendar: {err}") from err
 
     def _parse_event(self, event) -> dict[str, Any] | None:
@@ -145,6 +166,7 @@ class GFADataCoordinator(DataUpdateCoordinator):
                 if keyword in summary_lower:
                     return waste_type
 
+        _LOGGER.debug(f"Unknown waste type for summary: {summary}")
         return "unknown"
 
     def get_next_pickup(self, waste_type: str | None = None) -> dict[str, Any] | None:
