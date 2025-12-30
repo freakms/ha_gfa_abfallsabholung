@@ -3,35 +3,36 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/release/your-username/gfa_abfallkalender.svg)](https://github.com/your-username/gfa_abfallkalender/releases)
 
-Eine Home Assistant Integration für Abfallkalender der GFA (z.B. GFA Lüneburg). Die Integration liest ICS-Kalender aus und kann die Abholtermine automatisch über Alexa ansagen.
+Eine Home Assistant Integration für den Abfallkalender der GFA Lüneburg. Die Integration lädt Abfalltermine direkt von der GFA-Webseite und kann automatische Alexa-Ansagen durchführen.
 
-## Features
+## ✨ Features
 
-- 📅 **ICS-Kalender Import**: Importiert Abfalltermine aus einem ICS-Kalender
-- 📱 **Sensoren**: Zeigt den nächsten Abholtermin für jede Abfallart an
+- 📍 **Direkte Adressauswahl**: Ort, Straße und Hausnummer werden direkt von der GFA-Webseite geladen
+- 📅 **Sensoren**: Zeigt den nächsten Abholtermin für jede Abfallart an
 - 🗓️ **Kalender-Entity**: Zeigt alle Termine im Home Assistant Kalender
 - 🔊 **Alexa-Ankündigungen**: Automatische Ansagen über Alexa Media Player
 - ⚙️ **Konfigurierbar**: Zeitpunkt, Alexa-Gerät und Abfallarten wählbar
+- 🔇 **"Alexa Stop"**: Ansagen enden automatisch mit "Alexa Stop"
 
-## Installation
+## 📦 Installation
 
 ### HACS (empfohlen)
 
 1. Öffnen Sie HACS in Home Assistant
 2. Klicken Sie auf "Integrationen"
-3. Klicken Sie auf die drei Punkte oben rechts → "Benutzerdefinierte Repositories"
+3. Klicken Sie auf die drei Punkte oben rechts → **"Benutzerdefinierte Repositories"**
 4. Fügen Sie die Repository-URL hinzu: `https://github.com/your-username/gfa_abfallkalender`
 5. Wählen Sie "Integration" als Kategorie
 6. Klicken Sie auf "Hinzufügen"
 7. Suchen Sie nach "GFA Abfallkalender" und installieren Sie es
-8. Starten Sie Home Assistant neu
+8. **Starten Sie Home Assistant neu**
 
 ### Manuelle Installation
 
 1. Kopieren Sie den Ordner `custom_components/gfa_abfallkalender` in Ihr Home Assistant `config/custom_components/` Verzeichnis
 2. Starten Sie Home Assistant neu
 
-## Konfiguration
+## ⚙️ Konfiguration
 
 ### 1. Integration hinzufügen
 
@@ -39,10 +40,25 @@ Eine Home Assistant Integration für Abfallkalender der GFA (z.B. GFA Lüneburg)
 2. Klicken Sie auf **Integration hinzufügen**
 3. Suchen Sie nach "GFA Abfallkalender"
 4. Folgen Sie dem Einrichtungsassistenten:
-   - **ICS-URL**: Die URL zu Ihrem Abfallkalender (aus der GFA-App oder Webseite)
-   - **Erinnerungszeit**: Wann soll Alexa erinnern? (z.B. 1 Tag vorher um 19:00)
-   - **Alexa-Gerät**: Welches Gerät soll die Ansage machen?
-   - **Abfallarten**: Für welche Abfallarten sollen Erinnerungen erfolgen?
+
+#### Schritt 1: Ort auswählen
+Wählen Sie Ihren Ort aus der Dropdown-Liste (z.B. "Lüneburg", "Adendorf", etc.)
+
+#### Schritt 2: Straße auswählen
+Nach der Ortsauswahl werden automatisch alle Straßen geladen.
+
+#### Schritt 3: Hausnummer auswählen
+Wählen Sie Ihre Hausnummer aus der Liste.
+
+#### Schritt 4: Erinnerung konfigurieren
+- **Tage vor der Abholung**: z.B. 1 Tag vorher
+- **Uhrzeit**: z.B. 19:00 Uhr
+
+#### Schritt 5: Alexa-Gerät auswählen
+Wählen Sie das Alexa-Gerät für die Ansagen.
+
+#### Schritt 6: Abfallarten auswählen
+Wählen Sie, für welche Abfallarten Erinnerungen erfolgen sollen.
 
 ### 2. Voraussetzungen für Alexa-Ansagen
 
@@ -52,18 +68,18 @@ Für die Alexa-Ankündigungen benötigen Sie die **Alexa Media Player** Integrat
 2. Richten Sie die Integration mit Ihrem Amazon-Konto ein
 3. Ihre Alexa-Geräte erscheinen dann als `media_player` Entities
 
-## Sensoren
+## 📊 Sensoren
 
 Die Integration erstellt folgende Sensoren:
 
 | Sensor | Beschreibung |
 |--------|-------------|
 | `sensor.gfa_nachste_abholung` | Datum der nächsten Abholung (egal welche Art) |
-| `sensor.gfa_restmull` | Nächster Restmüll-Termin |
+| `sensor.gfa_restmuell` | Nächster Restmüll-Termin |
 | `sensor.gfa_altpapier` | Nächster Altpapier-Termin |
 | `sensor.gfa_gelber_sack` | Nächster Gelber Sack-Termin |
 | `sensor.gfa_biotonne` | Nächster Biotonne-Termin |
-| ... | (weitere je nach Kalender) |
+| `sensor.gfa_gruenabfall` | Nächster Grünabfall-Termin |
 
 ### Sensor-Attribute
 
@@ -76,7 +92,7 @@ Jeder Sensor hat folgende Attribute:
 - `is_tomorrow`: `true` wenn morgen abgeholt wird
 - `is_today`: `true` wenn heute abgeholt wird
 
-## Services
+## 🔧 Services
 
 ### `gfa_abfallkalender.announce_pickup`
 
@@ -88,13 +104,25 @@ service: gfa_abfallkalender.announce_pickup
 
 ### `gfa_abfallkalender.refresh_calendar`
 
-Aktualisiert die Kalenderdaten vom ICS-Server.
+Aktualisiert die Kalenderdaten von der GFA-Webseite.
 
 ```yaml
 service: gfa_abfallkalender.refresh_calendar
 ```
 
-## Beispiel-Automationen
+## 🔊 Alexa-Ansage Format
+
+Die automatische Alexa-Ansage hat folgendes Format:
+
+> "Abholtermin der GFA morgen. Abgeholt wird Altpapier. Alexa Stop."
+
+Bei mehreren Abfallarten:
+
+> "Abholtermin der GFA morgen. Abgeholt wird Restmüll und Gelber Sack. Alexa Stop."
+
+Das "Alexa Stop" am Ende sorgt dafür, dass Alexa nicht auf weitere Befehle wartet.
+
+## 📝 Beispiel-Automationen
 
 ### Zusätzliche Erinnerung am Morgen
 
@@ -133,71 +161,90 @@ automation:
           message: "Morgen wird {{ state_attr('sensor.gfa_nachste_abholung', 'waste_type_name') }} abgeholt."
 ```
 
-## Alexa-Ansage Format
+### Licht blinken lassen bei Termin
 
-Die automatische Alexa-Ansage hat folgendes Format:
+```yaml
+automation:
+  - alias: "Müll-Erinnerung Licht"
+    trigger:
+      - platform: time
+        at: "19:30:00"
+    condition:
+      - condition: state
+        entity_id: sensor.gfa_nachste_abholung
+        attribute: is_tomorrow
+        state: true
+    action:
+      - repeat:
+          count: 3
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id: light.flur
+              data:
+                color_name: yellow
+            - delay: 1
+            - service: light.turn_off
+              target:
+                entity_id: light.flur
+            - delay: 1
+```
 
-> "Abholtermin der GFA morgen. Abgeholt wird Altpapier. Alexa Stop."
+## 🗑️ Unterstützte Abfallarten
 
-Bei mehreren Abfallarten:
+Die Integration erkennt automatisch folgende Abfallarten:
 
-> "Abholtermin der GFA morgen. Abgeholt wird Restmüll und Gelber Sack. Alexa Stop."
+| Abfallart | Erkannte Begriffe |
+|-----------|-------------------|
+| Restmüll | Restmüll, Restabfall, Hausmüll |
+| Altpapier | Altpapier, Papier, Papiertonne |
+| Gelber Sack | Gelber Sack, Wertstoffe, Verpackungen |
+| Biotonne | Biotonne, Bioabfall |
+| Grünabfall | Grünabfall, Gartenabfall, Laub |
+| Sperrmüll | Sperrmüll, Altmetall |
+| Schadstoffmobil | Schadstoffmobil, Problemstoffe |
+| Weihnachtsbaum | Weihnachtsbaum, Christbaum |
 
-Das "Alexa Stop" am Ende sorgt dafür, dass Alexa nicht auf weitere Befehle wartet.
+## 🌍 Unterstützte Orte
 
-## Unterstützte Abfallarten
+Alle Orte im Landkreis Lüneburg werden unterstützt:
 
-Die Integration erkennt automatisch folgende Abfallarten anhand der Kalendereinträge:
+Adendorf, Amelinghausen, Amt Neuhaus, Artlenburg, Bardowick, Barendorf, Barnstedt, Barum, Betzendorf, Bleckede, Boitze, Brietlingen, Dahlem, Dahlenburg, Deutsch Evern, Echem, Embsen, Haar, Handorf, Hittbergen, Hohnstorf, Kaarßen, Kirchgellersen, Lüdersburg, **Lüneburg**, Mechtersen, Melbeck, Nahrendorf, Neetze, Oldendorf/Luhe, Radbruch, Rehlingen, Reinstorf, Reppenstedt, Rullstorf, Scharnebeck, Soderstorf, Stapel, Südergellersen, Sumte, Thomasburg, Tosterglope, Tripkau, Vastorf, Vögelsen, Wehningen, Wendisch Evern, Westergellersen, Wittorf
 
-- Restmüll
-- Altpapier
-- Gelber Sack / Wertstoffe
-- Biotonne
-- Sperrmüll
-- Schadstoffmobil
-- Weihnachtsbaum
-- Grünabfall
+## ❓ Fehlerbehebung
 
-Falls Ihre Abfallart nicht erkannt wird, wird sie als "Unbekannt" mit dem Original-Text aus dem Kalender angezeigt.
+### Orte/Straßen werden nicht geladen
 
-## ICS-URL finden
-
-### GFA Lüneburg
-
-1. Gehen Sie auf [gfa-lueneburg.de](https://gfa-lueneburg.de)
-2. Navigieren Sie zum Abfallkalender
-3. Geben Sie Ihre Adresse ein
-4. Exportieren Sie den Kalender als ICS-Datei oder kopieren Sie die Kalender-URL
-
-### Allgemein
-
-Die meisten Abfallgesellschaften bieten einen ICS-Export an. Suchen Sie nach:
-- "Kalender exportieren"
-- "ICS Download"
-- "Kalender abonnieren"
-
-## Fehlerbehebung
-
-### Kalender wird nicht geladen
-
-- Prüfen Sie, ob die ICS-URL direkt im Browser erreichbar ist
-- Stellen Sie sicher, dass die URL mit `http://` oder `https://` beginnt
-- Einige Kalender erfordern aktuelle Adressparameter in der URL
+- Prüfen Sie Ihre Internetverbindung
+- Die GFA-Webseite könnte vorübergehend nicht erreichbar sein
+- Versuchen Sie es später erneut
 
 ### Alexa sagt nichts an
 
-- Prüfen Sie, ob die Alexa Media Player Integration funktioniert
-- Testen Sie die Ansage manuell über den Service `gfa_abfallkalender.announce_pickup`
-- Prüfen Sie die Home Assistant Logs auf Fehler
+1. Prüfen Sie, ob die Alexa Media Player Integration korrekt eingerichtet ist
+2. Testen Sie die Ansage manuell:
+   ```yaml
+   service: gfa_abfallkalender.announce_pickup
+   ```
+3. Prüfen Sie die Home Assistant Logs auf Fehler
 
-### Abfallart wird nicht erkannt
+### Termine werden nicht aktualisiert
 
-Die Integration verwendet Schlüsselwörter zur Erkennung. Falls Ihre Abfallgesellschaft andere Bezeichnungen verwendet, öffnen Sie bitte ein Issue auf GitHub.
+Die Daten werden alle 6 Stunden automatisch aktualisiert. Sie können manuell aktualisieren:
+```yaml
+service: gfa_abfallkalender.refresh_calendar
+```
 
-## Lizenz
+## 📜 Lizenz
 
 MIT License - siehe [LICENSE](LICENSE)
 
-## Beitragen
+## 🤝 Beitragen
 
 Beiträge sind willkommen! Bitte öffnen Sie ein Issue oder Pull Request auf GitHub.
+
+## 🔗 Links
+
+- [GFA Lüneburg Webseite](https://www.gfa-lueneburg.de/)
+- [GFA Abfuhrkalender](https://gfa-lueneburg.de/service/abfuhrkalender.html)
+- [Alexa Media Player Integration](https://github.com/alandtse/alexa_media_player)
