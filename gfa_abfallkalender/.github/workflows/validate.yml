@@ -1,0 +1,42 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Install dependencies
+        run: |
+          pip install homeassistant
+          pip install icalendar recurring-ical-events
+      
+      - name: Validate manifest.json
+        run: |
+          python -c "import json; json.load(open('custom_components/gfa_abfallkalender/manifest.json'))"
+      
+      - name: Validate hacs.json
+        run: |
+          python -c "import json; json.load(open('hacs.json'))"
+      
+      - name: Check Python syntax
+        run: |
+          python -m py_compile custom_components/gfa_abfallkalender/*.py
+
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: HACS Validation
+        uses: hacs/action@main
+        with:
+          category: integration
