@@ -5,6 +5,9 @@ DOMAIN = "gfa_abfallkalender"
 
 # Configuration keys
 CONF_ICS_URL = "ics_url"
+CONF_CITY = "city"
+CONF_STREET = "street"
+CONF_HOUSE_NUMBER = "house_number"
 CONF_REMINDER_TIME = "reminder_time"
 CONF_REMINDER_DAYS_BEFORE = "reminder_days_before"
 CONF_ALEXA_ENTITY = "alexa_entity"
@@ -18,38 +21,38 @@ DEFAULT_SCAN_INTERVAL = timedelta(hours=6)
 
 # Waste type mappings (German)
 WASTE_TYPE_MAPPINGS = {
-    "restmüll": ["restmüll", "restabfall", "hausmüll", "schwarze tonne"],
-    "altpapier": ["altpapier", "papier", "pappe", "blaue tonne"],
+    "restmuell": ["restmüll", "restabfall", "restabfallbehälter", "restabfallbehaelter", "hausmüll", "schwarze tonne"],
+    "altpapier": ["altpapier", "papier", "pappe", "papiertonne", "blaue tonne"],
     "gelber_sack": ["gelber sack", "gelbe tonne", "verpackungen", "leichtverpackungen", "wertstoffe"],
-    "biotonne": ["biotonne", "bioabfall", "grüne tonne", "kompost"],
-    "sperrmüll": ["sperrmüll", "sperrgut"],
+    "biotonne": ["biotonne", "bioabfall", "grüne tonne", "kompost", "bio"],
+    "gruenabfall": ["grünabfall", "gruenabfall", "gartenabfall", "laub"],
+    "sperrmuell": ["sperrmüll", "sperrmuell", "sperrgut", "altmetall"],
     "schadstoffmobil": ["schadstoffmobil", "schadstoffe", "problemstoffe"],
     "weihnachtsbaum": ["weihnachtsbaum", "christbaum", "tannenbaum"],
-    "grünabfall": ["grünabfall", "gartenabfall", "laub"],
 }
 
 # Friendly names for waste types
 WASTE_TYPE_NAMES = {
-    "restmüll": "Restmüll",
-    "altpapier": "Altpapier",
+    "restmuell": "Restmüll",
+    "altpapier": "Altpapier/Papiertonne",
     "gelber_sack": "Gelber Sack",
     "biotonne": "Biotonne",
-    "sperrmüll": "Sperrmüll",
+    "gruenabfall": "Grünabfall",
+    "sperrmuell": "Sperrmüll/Altmetall",
     "schadstoffmobil": "Schadstoffmobil",
     "weihnachtsbaum": "Weihnachtsbaum",
-    "grünabfall": "Grünabfall",
 }
 
 # Icons for waste types
 WASTE_TYPE_ICONS = {
-    "restmüll": "mdi:trash-can",
+    "restmuell": "mdi:trash-can",
     "altpapier": "mdi:newspaper-variant-multiple",
     "gelber_sack": "mdi:recycle",
     "biotonne": "mdi:leaf",
-    "sperrmüll": "mdi:sofa",
+    "gruenabfall": "mdi:tree",
+    "sperrmuell": "mdi:sofa",
     "schadstoffmobil": "mdi:bottle-tonic-skull",
     "weihnachtsbaum": "mdi:pine-tree",
-    "grünabfall": "mdi:tree",
 }
 
 # Service names
