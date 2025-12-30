@@ -1,0 +1,78 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "GFA Abfallkalender einrichten",
+                "description": "Geben Sie die URL zu Ihrem ICS-Kalender ein. Diese finden Sie in der GFA-App oder auf der GFA-Webseite.\n\nBeispiel: {example_url}",
+                "data": {
+                    "ics_url": "ICS Kalender-URL"
+                }
+            },
+            "reminder": {
+                "title": "Erinnerung konfigurieren",
+                "description": "Wann möchten Sie an die Abholung erinnert werden?",
+                "data": {
+                    "reminder_days_before": "Tage vor der Abholung",
+                    "reminder_time": "Uhrzeit der Erinnerung"
+                }
+            },
+            "alexa": {
+                "title": "Alexa-Gerät auswählen",
+                "description": "Wählen Sie das Alexa-Gerät aus, das die Erinnerungen ansagen soll.",
+                "data": {
+                    "alexa_entity": "Alexa-Gerät"
+                }
+            },
+            "waste_types": {
+                "title": "Abfallarten auswählen",
+                "description": "Wählen Sie die Abfallarten aus, für die Sie Erinnerungen erhalten möchten.",
+                "data": {
+                    "enabled_waste_types": "Aktivierte Abfallarten"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung zum Kalender fehlgeschlagen. Bitte überprüfen Sie die URL.",
+            "invalid_ics": "Die Datei konnte nicht als Kalender gelesen werden.",
+            "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        },
+        "abort": {
+            "already_configured": "Dieser Kalender ist bereits eingerichtet."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "GFA Abfallkalender Optionen",
+                "description": "Passen Sie die Erinnerungseinstellungen an.",
+                "data": {
+                    "reminder_days_before": "Tage vor der Abholung",
+                    "reminder_time": "Uhrzeit der Erinnerung",
+                    "alexa_entity": "Alexa-Gerät"
+                }
+            }
+        }
+    },
+    "services": {
+        "announce_pickup": {
+            "name": "Abholung ansagen",
+            "description": "Sagt die nächste Abholung über Alexa an."
+        },
+        "refresh_calendar": {
+            "name": "Kalender aktualisieren",
+            "description": "Aktualisiert die Daten vom ICS-Kalender."
+        }
+    },
+    "entity": {
+        "sensor": {
+            "next_pickup": {
+                "name": "Nächste Abholung"
+            }
+        },
+        "calendar": {
+            "waste_calendar": {
+                "name": "Abfallkalender"
+            }
+        }
+    }
+}
