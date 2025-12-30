@@ -97,6 +97,18 @@ class GFALueneburgAPI:
         if self._session and not self._session.closed:
             await self._session.close()
 
+    def _get_relevant_year(self) -> int:
+        """Get the most relevant year for calendar data.
+        
+        If we're in the last month of the year, use next year.
+        Otherwise use current year.
+        """
+        now = datetime.now()
+        # In December, prefer next year's calendar
+        if now.month == 12:
+            return now.year + 1
+        return now.year
+
     async def get_cities(self) -> list[str]:
         """Fetch the list of available cities."""
         session = await self._get_session()
@@ -123,8 +135,9 @@ class GFALueneburgAPI:
         if not self._args:
             await self.get_cities()
 
+        year = self._get_relevant_year()
         args = self._args.copy()
-        args["Zeitraum"] = f"Jahresübersicht {datetime.now().year}"
+        args["Zeitraum"] = f"Jahresübersicht {year}"
         args["Ort"] = city
         args["Strasse"] = ""
         args["Hausnummer"] = ""
@@ -150,8 +163,9 @@ class GFALueneburgAPI:
         if not self._args:
             await self.get_streets(city)
 
+        year = self._get_relevant_year()
         args = self._args.copy()
-        args["Zeitraum"] = f"Jahresübersicht {datetime.now().year}"
+        args["Zeitraum"] = f"Jahresübersicht {year}"
         args["Ort"] = city
         args["Strasse"] = street
         args["Hausnummer"] = ""
@@ -169,10 +183,10 @@ class GFALueneburgAPI:
         
         return parser.house_numbers
 
-    async def get_ics_calendar(
-        self, city: str, street: str, house_number: str
+    async def _fetch_ics_for_year(
+        self, city: str, street: str, house_number: str, year: int
     ) -> str:
-        """Fetch the ICS calendar data for a given address."""
+        """Fetch the ICS calendar data for a specific year."""
         session = await self._get_session()
 
         # Step 1: Initial page
@@ -188,8 +202,10 @@ class GFALueneburgAPI:
         parser.feed(text)
         args = parser.args
 
+        zeitraum = f"Jahresübersicht {year}"
+
         # Step 2: Select city
-        args["Zeitraum"] = f"Jahresübersicht {datetime.now().year}"
+        args["Zeitraum"] = zeitraum
         args["Ort"] = city
         args["Strasse"] = street
         args["Hausnummer"] = str(house_number)
@@ -206,7 +222,7 @@ class GFALueneburgAPI:
         args = parser.args
 
         # Step 3: Select street
-        args["Zeitraum"] = f"Jahresübersicht {datetime.now().year}"
+        args["Zeitraum"] = zeitraum
         args["Ort"] = city
         args["Strasse"] = street
         args["Hausnummer"] = str(house_number)
@@ -223,7 +239,7 @@ class GFALueneburgAPI:
         args = parser.args
 
         # Step 4: Forward to results
-        args["Zeitraum"] = f"Jahresübersicht {datetime.now().year}"
+        args["Zeitraum"] = zeitraum
         args["Ort"] = city
         args["Strasse"] = street
         args["Hausnummer"] = str(house_number)
@@ -253,3 +269,80 @@ class GFALueneburgAPI:
             ics_content = await response.text()
 
         return ics_content
+
+    async def get_ics_calendar(
+        self, city: str, street: str, house_number: str
+    ) -> str:
+        """Fetch the ICS calendar data for a given address.
+        
+        Fetches both current year and next year's calendar data,
+        then merges them into a single ICS file.
+        """
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        
+        _LOGGER.debug(f"Fetching calendar for {city}, {street} {house_number}")
+        
+        # Fetch current year
+        try:
+            ics_current = await self._fetch_ics_for_year(
+                city, street, house_number, current_year
+            )
+            _LOGGER.debug(f"Fetched {current_year} calendar: {len(ics_current)} bytes")
+        except Exception as e:
+            _LOGGER.warning(f"Could not fetch {current_year} calendar: {e}")
+            ics_current = ""
+        
+        # Fetch next year
+        try:
+            ics_next = await self._fetch_ics_for_year(
+                city, street, house_number, next_year
+            )
+            _LOGGER.debug(f"Fetched {next_year} calendar: {len(ics_next)} bytes")
+        except Exception as e:
+            _LOGGER.warning(f"Could not fetch {next_year} calendar: {e}")
+            ics_next = ""
+        
+        # Merge calendars
+        if ics_current and ics_next:
+            # Extract events from next year's calendar and add to current
+            merged = self._merge_ics_calendars(ics_current, ics_next)
+            _LOGGER.debug(f"Merged calendar: {len(merged)} bytes")
+            return merged
+        elif ics_next:
+            return ics_next
+        elif ics_current:
+            return ics_current
+        else:
+            raise Exception("Could not fetch calendar data for any year")
+
+    def _merge_ics_calendars(self, ics1: str, ics2: str) -> str:
+        """Merge two ICS calendar strings into one."""
+        # Extract VEVENT blocks from second calendar
+        events_to_add = []
+        in_event = False
+        current_event = []
+        
+        for line in ics2.split('\n'):
+            if line.strip() == 'BEGIN:VEVENT':
+                in_event = True
+                current_event = [line]
+            elif line.strip() == 'END:VEVENT':
+                current_event.append(line)
+                events_to_add.append('\n'.join(current_event))
+                in_event = False
+                current_event = []
+            elif in_event:
+                current_event.append(line)
+        
+        if not events_to_add:
+            return ics1
+        
+        # Insert events before END:VCALENDAR
+        end_marker = 'END:VCALENDAR'
+        if end_marker in ics1:
+            insert_pos = ics1.rfind(end_marker)
+            merged = ics1[:insert_pos] + '\n'.join(events_to_add) + '\n' + ics1[insert_pos:]
+            return merged
+        
+        return ics1
