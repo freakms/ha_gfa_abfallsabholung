@@ -21,7 +21,7 @@ Eine Home Assistant Integration für den Abfallkalender der GFA Lüneburg. Die I
 1. Öffnen Sie HACS in Home Assistant
 2. Klicken Sie auf "Integrationen"
 3. Klicken Sie auf die drei Punkte oben rechts → **"Benutzerdefinierte Repositories"**
-4. Fügen Sie die Repository-URL hinzu: `https://github.com/your-username/gfa_abfallkalender`
+4. Fügen Sie die Repository-URL hinzu: `https://github.com/freakms/ha_gfa_abfallsabholung`
 5. Wählen Sie "Integration" als Kategorie
 6. Klicken Sie auf "Hinzufügen"
 7. Suchen Sie nach "GFA Abfallkalender" und installieren Sie es
