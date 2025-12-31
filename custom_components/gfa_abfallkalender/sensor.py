@@ -1,6 +1,3 @@
-
-Action: file_editor view /app/ha_gfa_abfallsabholung/custom_components/gfa_abfallkalender/sensor.py
-Observation: /app/ha_gfa_abfallsabholung/custom_components/gfa_abfallkalender/sensor.py:
 1|"""Sensor platform for GFA Abfallkalender."""
 2|from datetime import datetime
 3|import logging
