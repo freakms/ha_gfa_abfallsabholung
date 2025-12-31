@@ -132,7 +132,6 @@ class GFAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
-            description_placeholders={"city": self._city},
         )
 
     async def async_step_house_number(
@@ -190,7 +189,6 @@ class GFAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
-            description_placeholders={"city": self._city, "street": self._street},
         )
 
     def _detect_waste_types(self, ics_content: str) -> list[str]:
@@ -340,15 +338,11 @@ class GFAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
         """Get the options flow for this handler."""
-        return GFAOptionsFlow(config_entry)
+        return GFAOptionsFlow()
 
 
 class GFAOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for GFA Abfallkalender."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
