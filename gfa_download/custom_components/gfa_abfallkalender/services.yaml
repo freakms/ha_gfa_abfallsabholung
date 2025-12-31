@@ -1,0 +1,7 @@
+announce_pickup:
+  name: Announce Pickup
+  description: Manually announce the next waste pickup via Alexa.
+
+refresh_calendar:
+  name: Refresh Calendar
+  description: Refresh the waste calendar data from the ICS source.
