@@ -41,6 +41,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "coordinator": coordinator,
         "config": entry.data,
         "unsub_reminder": None,
+        "unsub_options_listener": None,
     }
 
     # Set up platforms
@@ -52,19 +53,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register services
     await _register_services(hass)
 
+    # Listen for options changes and re-apply reminder immediately
+    async def _options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Re-apply reminder when options are changed."""
+        _LOGGER.debug("Options updated, re-applying reminder")
+        await _setup_reminder(hass, entry)
+
+    unsub_listener = entry.add_update_listener(_options_updated)
+    hass.data[DOMAIN][entry.entry_id]["unsub_options_listener"] = unsub_listener
+
     return True
 
 
 async def _setup_reminder(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Set up the daily reminder."""
-    reminder_time_str = entry.data.get(CONF_REMINDER_TIME, "19:00")
-    
-    # Handle both string and dict formats for time
+    """Set up the daily reminder, reading options before data."""
+    # Options override data so live changes take effect immediately
+    config = {**entry.data, **entry.options}
+    reminder_time_str = config.get(CONF_REMINDER_TIME, "19:00")
+
+    # Handle all three possible formats:
+    #   dict  {"hour": 19, "minute": 0}      (older HA versions)
+    #   str   "HH:MM"                         (manually set)
+    #   str   "HH:MM:SS"                      (TimeSelector in current HA)
     if isinstance(reminder_time_str, dict):
-        hour = reminder_time_str.get("hour", 19)
-        minute = reminder_time_str.get("minute", 0)
+        hour = int(reminder_time_str.get("hour", 19))
+        minute = int(reminder_time_str.get("minute", 0))
     else:
-        hour, minute = map(int, reminder_time_str.split(":"))
+        parts = str(reminder_time_str).split(":")
+        hour = int(parts[0])
+        minute = int(parts[1])
 
     async def _reminder_callback(now: datetime) -> None:
         """Handle reminder callback."""
@@ -85,7 +102,8 @@ async def _setup_reminder(hass: HomeAssistant, entry: ConfigEntry) -> None:
 async def _announce_tomorrow_pickups(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Announce tomorrow's waste pickups via Alexa."""
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    config = entry.data
+    # Options take priority over initial data (same as _setup_reminder)
+    config = {**entry.data, **entry.options}
 
     alexa_entity = config.get(CONF_ALEXA_ENTITY)
     if not alexa_entity:
@@ -105,11 +123,15 @@ async def _announce_tomorrow_pickups(hass: HomeAssistant, entry: ConfigEntry) ->
         _LOGGER.debug(f"No pickups scheduled for {target_date}")
         return
 
-    # Filter by enabled waste types
+    # Filter by enabled waste types and deduplicate by waste_type
+    seen_types: set[str] = set()
     filtered_pickups = []
     for pickup in pickups:
         waste_type = pickup.get("waste_type")
+        if waste_type in seen_types:
+            continue
         if not enabled_types or waste_type in enabled_types:
+            seen_types.add(waste_type)
             filtered_pickups.append(pickup)
 
     if not filtered_pickups:
@@ -137,34 +159,57 @@ async def _announce_tomorrow_pickups(hass: HomeAssistant, entry: ConfigEntry) ->
     else:
         waste_list = waste_names[0]
 
-    message = f"Abholtermin der GFA {day_text}. Abgeholt wird {waste_list}. Alexa Stop."
+    message = f"Abholtermin der GFA {day_text}. Abgeholt wird {waste_list}."
 
     _LOGGER.info(f"Announcing: {message}")
 
-    # Call Alexa Media Player notify service
-    # Try different service naming patterns
-    alexa_service_name = alexa_entity.replace("media_player.", "alexa_media_")
-    
+    # Try Alexa Media Player notify service first
+    # The notify service name is derived from the entity_id:
+    # media_player.mein_echo  →  notify.alexa_media_mein_echo
+    entity_slug = alexa_entity.replace("media_player.", "")
+    alexa_notify_service = f"alexa_media_{entity_slug}"
+
     try:
         await hass.services.async_call(
             "notify",
-            alexa_service_name,
+            alexa_notify_service,
             {"message": message, "data": {"type": "announce"}},
         )
+        _LOGGER.debug(f"Announcement sent via notify.{alexa_notify_service}")
+        return
     except Exception as e:
-        _LOGGER.warning(f"Failed to call notify service: {e}")
-        # Try alternative: media_player.play_media for TTS
-        try:
-            await hass.services.async_call(
-                "tts",
-                "speak",
-                {
-                    "entity_id": alexa_entity,
-                    "message": message,
-                },
-            )
-        except Exception as e2:
-            _LOGGER.error(f"Failed to announce via TTS: {e2}")
+        _LOGGER.warning(f"notify.{alexa_notify_service} failed: {e}")
+
+    # Fallback: media_player.play_media with Alexa TTS type
+    try:
+        await hass.services.async_call(
+            "media_player",
+            "play_media",
+            {
+                "entity_id": alexa_entity,
+                "media_content_id": message,
+                "media_content_type": "sound",
+                "extra": {"announcement": True},
+            },
+        )
+        _LOGGER.debug("Announcement sent via media_player.play_media")
+        return
+    except Exception as e:
+        _LOGGER.warning(f"media_player.play_media failed: {e}")
+
+    # Last resort: tts.speak
+    try:
+        await hass.services.async_call(
+            "tts",
+            "speak",
+            {
+                "entity_id": alexa_entity,
+                "message": message,
+            },
+        )
+        _LOGGER.debug("Announcement sent via tts.speak")
+    except Exception as e:
+        _LOGGER.error(f"All announcement methods failed: {e}")
 
 
 async def _register_services(hass: HomeAssistant) -> None:
@@ -195,6 +240,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     # Cancel reminder
     if unsub := hass.data[DOMAIN][entry.entry_id].get("unsub_reminder"):
+        unsub()
+
+    # Cancel options listener
+    if unsub := hass.data[DOMAIN][entry.entry_id].get("unsub_options_listener"):
         unsub()
 
     # Close API session

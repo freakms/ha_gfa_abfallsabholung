@@ -65,7 +65,8 @@ class GFADataCoordinator(DataUpdateCoordinator):
                 import aiohttp
                 async with aiohttp.ClientSession() as session:
                     async with session.get(
-                        self._config[CONF_ICS_URL], timeout=30
+                        self._config[CONF_ICS_URL],
+                        timeout=aiohttp.ClientTimeout(total=30),
                     ) as response:
                         if response.status != 200:
                             raise UpdateFailed(

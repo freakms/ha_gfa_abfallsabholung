@@ -351,7 +351,18 @@ class GFAOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        current_config = self.config_entry.data
+        # Options take priority over data
+        current = {**self.config_entry.data, **self.config_entry.options}
+
+        # TimeSelector always needs "HH:MM" as default (no seconds).
+        # entry.options stores it as "HH:MM:SS" (current HA) or
+        # as dict {"hour": X, "minute": Y} (older HA) — normalise here.
+        raw_time = current.get(CONF_REMINDER_TIME, DEFAULT_REMINDER_TIME)
+        if isinstance(raw_time, dict):
+            reminder_time_default = f"{int(raw_time.get('hour', 19)):02d}:{int(raw_time.get('minute', 0)):02d}"
+        else:
+            parts = str(raw_time).split(":")
+            reminder_time_default = f"{parts[0]}:{parts[1]}"
 
         return self.async_show_form(
             step_id="init",
@@ -359,7 +370,7 @@ class GFAOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_REMINDER_DAYS_BEFORE,
-                        default=current_config.get(
+                        default=current.get(
                             CONF_REMINDER_DAYS_BEFORE, DEFAULT_REMINDER_DAYS_BEFORE
                         ),
                     ): selector.NumberSelector(
@@ -373,13 +384,11 @@ class GFAOptionsFlow(config_entries.OptionsFlow):
                     ),
                     vol.Required(
                         CONF_REMINDER_TIME,
-                        default=current_config.get(
-                            CONF_REMINDER_TIME, DEFAULT_REMINDER_TIME
-                        ),
+                        default=reminder_time_default,
                     ): selector.TimeSelector(),
-                    vol.Required(
+                    vol.Optional(
                         CONF_ALEXA_ENTITY,
-                        default=current_config.get(CONF_ALEXA_ENTITY),
+                        default=current.get(CONF_ALEXA_ENTITY),
                     ): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain="media_player",

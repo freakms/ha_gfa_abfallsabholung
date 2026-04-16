@@ -5,6 +5,7 @@ import logging
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -12,6 +13,9 @@ from .const import (
     DOMAIN,
     WASTE_TYPE_NAMES,
     WASTE_TYPE_ICONS,
+    CONF_CITY,
+    CONF_STREET,
+    CONF_HOUSE_NUMBER,
 )
 from .coordinator import GFADataCoordinator
 
@@ -76,6 +80,12 @@ class GFANextPickupSensor(CoordinatorEntity, SensorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_next_pickup"
         self._attr_name = "GFA Nächste Abholung"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=f"GFA Abfallkalender – {entry.data.get(CONF_CITY, '')}",
+            manufacturer="GFA Lüneburg",
+            model=f"{entry.data.get(CONF_STREET, '')} {entry.data.get(CONF_HOUSE_NUMBER, '')}".strip(),
+        )
 
     @property
     def native_value(self):
@@ -119,6 +129,12 @@ class GFAUpcomingPickupsSensor(CoordinatorEntity, SensorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_upcoming_pickups"
         self._attr_name = "GFA Kommende Termine"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=f"GFA Abfallkalender – {entry.data.get(CONF_CITY, '')}",
+            manufacturer="GFA Lüneburg",
+            model=f"{entry.data.get(CONF_STREET, '')} {entry.data.get(CONF_HOUSE_NUMBER, '')}".strip(),
+        )
 
     @property
     def native_value(self):
@@ -209,6 +225,12 @@ class GFAWasteTypeSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_{waste_type}"
         self._attr_name = f"GFA {WASTE_TYPE_NAMES.get(waste_type, waste_type)}"
         self._attr_icon = WASTE_TYPE_ICONS.get(waste_type, "mdi:trash-can")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=f"GFA Abfallkalender – {entry.data.get(CONF_CITY, '')}",
+            manufacturer="GFA Lüneburg",
+            model=f"{entry.data.get(CONF_STREET, '')} {entry.data.get(CONF_HOUSE_NUMBER, '')}".strip(),
+        )
 
     @property
     def native_value(self):

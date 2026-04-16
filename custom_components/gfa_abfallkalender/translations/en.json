@@ -3,7 +3,7 @@
         "step": {
             "user": {
                 "title": "Set up GFA Waste Calendar",
-                "description": "Enter the URL to your ICS calendar. You can find this in the GFA app or on the GFA website.\n\nExample: {example_url}",
+                "description": "Select your city from the list. Data is loaded directly from the GFA Lüneburg website.",
                 "data": {
                     "ics_url": "ICS Calendar URL"
                 }

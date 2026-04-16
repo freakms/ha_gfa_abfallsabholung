@@ -5,10 +5,11 @@ import logging
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, WASTE_TYPE_NAMES, WASTE_TYPE_ICONS
+from .const import DOMAIN, WASTE_TYPE_NAMES, WASTE_TYPE_ICONS, CONF_CITY, CONF_STREET, CONF_HOUSE_NUMBER
 from .coordinator import GFADataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,6 +40,12 @@ class GFACalendarEntity(CoordinatorEntity, CalendarEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_calendar"
         self._attr_name = "GFA Abfallkalender"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=f"GFA Abfallkalender – {entry.data.get(CONF_CITY, '')}",
+            manufacturer="GFA Lüneburg",
+            model=f"{entry.data.get(CONF_STREET, '')} {entry.data.get(CONF_HOUSE_NUMBER, '')}".strip(),
+        )
 
     @property
     def event(self) -> CalendarEvent | None:

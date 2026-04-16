@@ -5,6 +5,7 @@ from html.parser import HTMLParser
 from typing import Any
 
 import aiohttp
+from aiohttp import ClientTimeout
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,7 +90,9 @@ class GFALueneburgAPI:
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create an aiohttp session."""
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
+            self._session = aiohttp.ClientSession(
+                timeout=ClientTimeout(total=30)
+            )
         return self._session
 
     async def close(self) -> None:
@@ -145,7 +148,7 @@ class GFALueneburgAPI:
         args["SubmitAction"] = "CITYCHANGED"
         args["Focus"] = "Ort"
 
-        async with session.post(SERVLET_URL, data=args, timeout=30) as response:
+        async with session.post(SERVLET_URL, data=args) as response:
             response.raise_for_status()
             text = await response.text()
 
@@ -173,7 +176,7 @@ class GFALueneburgAPI:
         args["SubmitAction"] = "STREETCHANGED"
         args["Focus"] = "Strasse"
 
-        async with session.post(SERVLET_URL, data=args, timeout=30) as response:
+        async with session.post(SERVLET_URL, data=args) as response:
             response.raise_for_status()
             text = await response.text()
 
@@ -213,7 +216,7 @@ class GFALueneburgAPI:
         args["SubmitAction"] = "CITYCHANGED"
         args["Focus"] = "Ort"
 
-        async with session.post(SERVLET_URL, data=args, timeout=30) as response:
+        async with session.post(SERVLET_URL, data=args) as response:
             response.raise_for_status()
             text = await response.text()
 
@@ -230,7 +233,7 @@ class GFALueneburgAPI:
         args["SubmitAction"] = "STREETCHANGED"
         args["Focus"] = "Strasse"
 
-        async with session.post(SERVLET_URL, data=args, timeout=30) as response:
+        async with session.post(SERVLET_URL, data=args) as response:
             response.raise_for_status()
             text = await response.text()
 
@@ -245,7 +248,7 @@ class GFALueneburgAPI:
         args["Hausnummer"] = str(house_number)
         args["SubmitAction"] = "forward"
 
-        async with session.post(SERVLET_URL, data=args, timeout=30) as response:
+        async with session.post(SERVLET_URL, data=args) as response:
             response.raise_for_status()
             text = await response.text()
 
@@ -264,7 +267,7 @@ class GFALueneburgAPI:
         for key in ["Zeitraum", "Ort", "Strasse", "Hausnummer"]:
             args.pop(key, None)
 
-        async with session.post(SERVLET_URL, data=args, timeout=30) as response:
+        async with session.post(SERVLET_URL, data=args) as response:
             response.raise_for_status()
             ics_content = await response.text()
 
@@ -317,32 +320,76 @@ class GFALueneburgAPI:
             raise Exception("Could not fetch calendar data for any year")
 
     def _merge_ics_calendars(self, ics1: str, ics2: str) -> str:
-        """Merge two ICS calendar strings into one."""
-        # Extract VEVENT blocks from second calendar
-        events_to_add = []
-        in_event = False
-        current_event = []
+        """Merge two ICS calendar strings into one, avoiding duplicates.
         
-        for line in ics2.split('\n'):
-            if line.strip() == 'BEGIN:VEVENT':
-                in_event = True
-                current_event = [line]
-            elif line.strip() == 'END:VEVENT':
-                current_event.append(line)
-                events_to_add.append('\n'.join(current_event))
-                in_event = False
-                current_event = []
-            elif in_event:
-                current_event.append(line)
-        
-        if not events_to_add:
+        Deduplication is done by UID. Events already present in ics1 (by UID
+        or by date+summary fingerprint) are skipped from ics2.
+        """
+        def _extract_events(ics: str) -> list[str]:
+            """Return a list of raw VEVENT blocks (CRLF-normalized)."""
+            blocks = []
+            in_event = False
+            current: list[str] = []
+            # Normalise line endings so we work with plain \n throughout
+            for line in ics.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+                if line.strip() == "BEGIN:VEVENT":
+                    in_event = True
+                    current = [line]
+                elif line.strip() == "END:VEVENT":
+                    current.append(line)
+                    blocks.append("\n".join(current))
+                    in_event = False
+                    current = []
+                elif in_event:
+                    current.append(line)
+            return blocks
+
+        def _event_uid(block: str) -> str | None:
+            for line in block.split("\n"):
+                if line.startswith("UID:"):
+                    return line[4:].strip()
+            return None
+
+        def _event_fingerprint(block: str) -> str:
+            """Date + summary fallback key when no UID is present."""
+            dtstart = summary = ""
+            for line in block.split("\n"):
+                if line.startswith("DTSTART"):
+                    dtstart = line.split(":", 1)[-1].strip()
+                elif line.startswith("SUMMARY"):
+                    summary = line.split(":", 1)[-1].strip()
+            return f"{dtstart}|{summary}"
+
+        events1 = _extract_events(ics1)
+        events2 = _extract_events(ics2)
+
+        # Build a set of keys already present in calendar 1
+        seen: set[str] = set()
+        for block in events1:
+            uid = _event_uid(block)
+            seen.add(uid if uid else _event_fingerprint(block))
+
+        # Collect only truly new events from calendar 2
+        new_events: list[str] = []
+        for block in events2:
+            uid = _event_uid(block)
+            key = uid if uid else _event_fingerprint(block)
+            if key not in seen:
+                seen.add(key)
+                new_events.append(block)
+
+        if not new_events:
             return ics1
-        
-        # Insert events before END:VCALENDAR
-        end_marker = 'END:VCALENDAR'
+
+        end_marker = "END:VCALENDAR"
         if end_marker in ics1:
             insert_pos = ics1.rfind(end_marker)
-            merged = ics1[:insert_pos] + '\n'.join(events_to_add) + '\n' + ics1[insert_pos:]
+            merged = (
+                ics1[:insert_pos]
+                + "\r\n".join(new_events)
+                + "\r\n"
+                + ics1[insert_pos:]
+            )
             return merged
-        
+
         return ics1
