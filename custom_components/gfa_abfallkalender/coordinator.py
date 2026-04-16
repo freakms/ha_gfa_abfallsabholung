@@ -95,10 +95,15 @@ class GFADataCoordinator(DataUpdateCoordinator):
             )
 
             self._events = []
+            seen_events: set[str] = set()
             for event in events:
                 event_data = self._parse_event(event)
                 if event_data:
-                    self._events.append(event_data)
+                    # Deduplicate by date + summary (handles duplicate UIDs from GFA)
+                    key = f"{event_data['date']}|{event_data['summary'].lower()}"
+                    if key not in seen_events:
+                        seen_events.add(key)
+                        self._events.append(event_data)
 
             _LOGGER.info(f"Found {len(self._events)} upcoming waste collection events")
 
