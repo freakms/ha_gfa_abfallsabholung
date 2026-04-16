@@ -25,6 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 WASTE_TYPE_EMOJIS = {
     "restmuell": "🗑️",
     "altpapier": "📰",
+    "papier_grossbeh": "📦",
     "gelber_sack": "♻️",
     "biotonne": "🌱",
     "gruenabfall": "🌳",
