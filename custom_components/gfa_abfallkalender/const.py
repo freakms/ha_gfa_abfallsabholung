@@ -22,8 +22,9 @@ DEFAULT_SCAN_INTERVAL = timedelta(hours=6)
 # Waste type mappings (German) - Keywords must be lowercase!
 # GFA Lüneburg uses: Biotonne, Gelbe Tonne, Gruenabfall, Papiertonne, Restmuell, Sperrmuell Altmetall
 WASTE_TYPE_MAPPINGS = {
-    "restmuell": ["restmüll", "restmuell", "restabfall", "restabfallbehälter", "restabfallbehaelter", "hausmüll", "schwarze tonne"],
-    "altpapier": ["altpapier", "papier", "pappe", "papiertonne", "blaue tonne"],
+    "restmuell": ["restmüll", "restmuell", "restabfall", "restabfallbehälter", "restabfallbehaelter", "hausmüll", "schwarze tonne", "restmuell grossbeh", "restmüll großbeh"],
+    "altpapier": ["papiertonne", "blaue tonne"],
+    "papier_grossbeh": ["papier grossbeh", "papier großbeh", "altpapier grossbeh", "altpapier großbeh"],
     "gelber_sack": ["gelber sack", "gelbe tonne", "gelbe sack", "verpackungen", "leichtverpackungen", "wertstoffe"],
     "biotonne": ["biotonne", "bioabfall", "grüne tonne", "kompost", "bio"],
     "gruenabfall": ["grünabfall", "gruenabfall", "gartenabfall", "laub"],
@@ -35,7 +36,8 @@ WASTE_TYPE_MAPPINGS = {
 # Friendly names for waste types
 WASTE_TYPE_NAMES = {
     "restmuell": "Restmüll",
-    "altpapier": "Altpapier/Papiertonne",
+    "altpapier": "Papiertonne",
+    "papier_grossbeh": "Papier Großbehälter",
     "gelber_sack": "Gelber Sack",
     "biotonne": "Biotonne",
     "gruenabfall": "Grünabfall",
@@ -48,6 +50,7 @@ WASTE_TYPE_NAMES = {
 WASTE_TYPE_ICONS = {
     "restmuell": "mdi:trash-can",
     "altpapier": "mdi:newspaper-variant-multiple",
+    "papier_grossbeh": "mdi:newspaper-variant-multiple",
     "gelber_sack": "mdi:recycle",
     "biotonne": "mdi:leaf",
     "gruenabfall": "mdi:tree",
