@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (z.B. 1.2.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,21 +20,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Resolve version and tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="v${VERSION}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"         >> "$GITHUB_OUTPUT"
+
+      - name: Create git tag (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.email "noreply@anthropic.com"
+          git config user.name "Claude"
+          git tag "${{ steps.vars.outputs.tag }}" || true
+          git push origin "${{ steps.vars.outputs.tag }}" || true
 
       - name: Create release zip
         run: |
           cd custom_components
-          zip -r "../ha_gfa_abfallsabholung-${GITHUB_REF_NAME}.zip" gfa_abfallkalender/
+          zip -r "../ha_gfa_abfallsabholung-${{ steps.vars.outputs.tag }}.zip" gfa_abfallkalender/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "GFA Abfallkalender ${{ github.ref_name }}"
-          body: |
-            ## Änderungen
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ steps.version.outputs.version }}...HEAD
-          files: "ha_gfa_abfallsabholung-${{ github.ref_name }}.zip"
+          tag_name: "${{ steps.vars.outputs.tag }}"
+          name: "GFA Abfallkalender ${{ steps.vars.outputs.tag }}"
+          files: "ha_gfa_abfallsabholung-${{ steps.vars.outputs.tag }}.zip"
           generate_release_notes: true
