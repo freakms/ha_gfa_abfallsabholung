@@ -1,6 +1,7 @@
 """GFA Abfallkalender Integration for Home Assistant."""
 import logging
 from datetime import datetime, time, timedelta
+from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -25,6 +26,19 @@ from .coordinator import GFADataCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS_LIST = [Platform.SENSOR, Platform.CALENDAR]
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register static path for the custom Lovelace grid card."""
+    www_path = Path(__file__).parent / "www"
+    if www_path.is_dir():
+        hass.http.register_static_path(
+            f"/{DOMAIN}",
+            str(www_path),
+            cache_headers=False,
+        )
+        _LOGGER.debug("Registered static path /%s → %s", DOMAIN, www_path)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

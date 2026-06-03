@@ -11,6 +11,7 @@ Eine Home Assistant Integration für den Abfallkalender der GFA Lüneburg. Die I
 - 📅 **Sensoren**: Zeigt den nächsten Abholtermin für jede Abfallart an
 - 🗓️ **Kalender-Entity**: Zeigt alle Termine im Home Assistant Kalender
 - 📋 **Kommende Termine Sensor**: Zeigt die nächsten 5 Termine mit Emojis
+- 🧩 **Custom Grid Card**: Kachel-Grid statt Liste – Symbolgröße konfigurierbar
 - 🔊 **Alexa-Ankündigungen**: Automatische Ansagen über Alexa Media Player
 - ⚙️ **Konfigurierbar**: Zeitpunkt, Alexa-Gerät und Abfallarten wählbar
 
@@ -54,6 +55,57 @@ Eine Home Assistant Integration für den Abfallkalender der GFA Lüneburg. Die I
 | `sensor.gfa_gruenabfall` | Nächster Grünabfall-Termin |
 
 ## 🎨 Dashboard-Karten
+
+### ⭐ GFA Abfall Grid Card (empfohlen)
+
+Die mitgelieferte Custom Lovelace Card zeigt die Mülltermine als **Kachel-Grid** mit großen Emojis – statt einer Liste.
+
+#### Einmalige Einrichtung: Lovelace-Ressource hinzufügen
+
+1. Home Assistant → **Einstellungen** → **Dashboards**
+2. Drei-Punkte-Menü oben rechts → **Ressourcen**
+3. **+ Ressource hinzufügen** mit:
+   - URL: `/gfa_abfallkalender/gfa-abfall-grid-card.js`
+   - Ressourcentyp: **JavaScript-Modul**
+4. Speichern und Seite neu laden
+
+> **Alternativ** direkt in `configuration.yaml`:
+> ```yaml
+> lovelace:
+>   resources:
+>     - url: /gfa_abfallkalender/gfa-abfall-grid-card.js
+>       type: module
+> ```
+
+#### Karte in Dashboard einfügen
+
+```yaml
+type: custom:gfa-abfall-grid-card
+entity: sensor.gfa_kommende_termine
+```
+
+#### Alle Konfigurationsoptionen
+
+```yaml
+type: custom:gfa-abfall-grid-card
+entity: sensor.gfa_kommende_termine  # Pflichtfeld
+title: Nächste Abholtermine          # Kartentitel (leer lassen = kein Titel)
+columns: 3                           # Spalten im Grid (1–6, default: 3)
+icon_size: 48                        # Emoji-Größe in Pixeln (16–120, default: 48)
+show_days_text: true                 # "Heute/Morgen/in X Tagen" anzeigen (default: true)
+show_date: true                      # Datum unter dem Badge anzeigen (default: true)
+max_items: 5                         # Maximale Kachelanzahl (default: 5)
+```
+
+**Farbcodierung:**
+| Farbe | Bedeutung |
+|:---:|---|
+| 🔴 Rot | Abholung heute |
+| 🟠 Orange | Abholung morgen |
+| 🟡 Gelb | Abholung in 2–3 Tagen |
+| – | Abholung in 4+ Tagen |
+
+---
 
 ### Markdown-Karte: Nächste 5 Termine
 
