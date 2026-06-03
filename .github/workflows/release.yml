@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version (z.B. 1.2.0)"
+        description: "Version (z.B. 1.3.0)"
         required: true
         type: string
 
@@ -41,6 +41,31 @@ jobs:
           git tag "${{ steps.vars.outputs.tag }}" || true
           git push origin "${{ steps.vars.outputs.tag }}" || true
 
+      - name: Extract changelog section
+        id: changelog
+        env:
+          TAG: ${{ steps.vars.outputs.tag }}
+        run: |
+          python3 << 'PYEOF'
+          import re, os
+
+          tag = os.environ["TAG"]
+
+          try:
+              with open("CHANGELOG.md") as f:
+                  content = f.read()
+              # Alles zwischen ## [vX.Y.Z] und dem nächsten ## [v oder Dateiende
+              pattern = rf"## \[{re.escape(tag)}\][^\n]*\n(.*?)(?=\n## \[v|\Z)"
+              match = re.search(pattern, content, re.DOTALL)
+              section = match.group(1).strip() if match else \
+                  f"_Keine Versionshinweise für {tag} in CHANGELOG.md gefunden._"
+          except FileNotFoundError:
+              section = "_CHANGELOG.md nicht gefunden._"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"notes<<CHANGELOG_EOF\n{section}\nCHANGELOG_EOF\n")
+          PYEOF
+
       - name: Create release zip
         run: |
           cd custom_components
@@ -51,5 +76,16 @@ jobs:
         with:
           tag_name: "${{ steps.vars.outputs.tag }}"
           name: "GFA Abfallkalender ${{ steps.vars.outputs.tag }}"
+          body: |
+            ${{ steps.changelog.outputs.notes }}
+
+            ---
+
+            ## 📦 Installation / Update
+
+            ### Via HACS
+            HACS → Integrationen → **GFA Abfallkalender** → Update → Home Assistant neu starten
+
+            ### Manuell
+            ZIP herunterladen → `custom_components/gfa_abfallkalender/` ersetzen → Home Assistant neu starten
           files: "ha_gfa_abfallsabholung-${{ steps.vars.outputs.tag }}.zip"
-          generate_release_notes: true
