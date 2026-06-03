@@ -30,14 +30,16 @@ PLATFORMS_LIST = [Platform.SENSOR, Platform.CALENDAR]
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Register static path for the custom Lovelace grid card."""
-    www_path = Path(__file__).parent / "www"
-    if www_path.is_dir():
+    js_file = Path(__file__).parent / "www" / "gfa-abfall-grid-card.js"
+    if js_file.is_file():
         hass.http.register_static_path(
-            f"/{DOMAIN}",
-            str(www_path),
+            f"/{DOMAIN}/gfa-abfall-grid-card.js",
+            str(js_file),
             cache_headers=False,
         )
-        _LOGGER.debug("Registered static path /%s → %s", DOMAIN, www_path)
+        _LOGGER.info("GFA Grid Card verfügbar unter /%s/gfa-abfall-grid-card.js", DOMAIN)
+    else:
+        _LOGGER.error("GFA Grid Card JS nicht gefunden: %s", js_file)
     return True
 
 
