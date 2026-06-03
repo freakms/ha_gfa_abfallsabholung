@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.2.1] - 2026-06-03
+
+### Bugfix
+- **Lovelace Card nicht geladen** (`Custom element doesn't exist`): `register_static_path` wird jetzt mit explizitem Dateipfad statt Verzeichnis aufgerufen – behebt den Fehler in allen HA-Versionen
+
+### Nach dem Update erforderlich
+- [ ] **Home Assistant neu starten**
+- [ ] Seite im Browser hart neu laden (`Strg+Shift+R`)
+- Die bereits eingetragene Ressource `/gfa_abfallkalender/gfa-abfall-grid-card.js` bleibt unverändert
+
+---
+
 ## [v1.2.0] - 2026-06-03
 
 ### Neu
