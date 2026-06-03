@@ -1,5 +1,6 @@
 """GFA Abfallkalender Integration for Home Assistant."""
 import logging
+import shutil
 from datetime import datetime, time, timedelta
 from pathlib import Path
 
@@ -29,17 +30,22 @@ PLATFORMS_LIST = [Platform.SENSOR, Platform.CALENDAR]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Register static path for the custom Lovelace grid card."""
-    js_file = Path(__file__).parent / "www" / "gfa-abfall-grid-card.js"
-    if js_file.is_file():
-        hass.http.register_static_path(
-            f"/{DOMAIN}/gfa-abfall-grid-card.js",
-            str(js_file),
-            cache_headers=False,
-        )
-        _LOGGER.info("GFA Grid Card verfügbar unter /%s/gfa-abfall-grid-card.js", DOMAIN)
-    else:
-        _LOGGER.error("GFA Grid Card JS nicht gefunden: %s", js_file)
+    """Copy Lovelace card JS to HA www directory so it's served at /local/."""
+    src = Path(__file__).parent / "www" / "gfa-abfall-grid-card.js"
+    if not src.is_file():
+        _LOGGER.warning("GFA Grid Card JS nicht gefunden: %s", src)
+        return True
+
+    dst_dir = Path(hass.config.path("www"))
+    dst_dir.mkdir(exist_ok=True)
+    dst = dst_dir / "gfa-abfall-grid-card.js"
+
+    try:
+        shutil.copy2(src, dst)
+        _LOGGER.info("GFA Grid Card verfügbar als /local/gfa-abfall-grid-card.js")
+    except Exception as err:
+        _LOGGER.error("Fehler beim Kopieren der GFA Grid Card: %s", err)
+
     return True
 
 

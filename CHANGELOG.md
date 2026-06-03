@@ -1,5 +1,22 @@
 # Changelog
 
+## [v1.2.2] - 2026-06-03
+
+### Bugfix
+- **`register_static_path` entfernt** – in HA 2024.x+ existiert diese Methode nicht mehr (`AttributeError`). Die Lovelace Card JS-Datei wird jetzt beim HA-Start in den `www`-Ordner kopiert und ist zuverlässig über `/local/gfa-abfall-grid-card.js` erreichbar
+
+### ⚠️ Ressource-URL hat sich geändert
+Die Lovelace-Ressource muss einmalig angepasst werden:
+- **Alt:** `/gfa_abfallkalender/gfa-abfall-grid-card.js`
+- **Neu:** `/local/gfa-abfall-grid-card.js`
+
+### Nach dem Update erforderlich
+- [ ] **Home Assistant neu starten** (Datei wird beim Start kopiert)
+- [ ] **Lovelace-Ressource aktualisieren**: Einstellungen → Dashboards → Ressourcen → alte URL ersetzen durch `/local/gfa-abfall-grid-card.js`
+- [ ] Seite hart neu laden (`Strg+Shift+R`)
+
+---
+
 ## [v1.2.1] - 2026-06-03
 
 ### Bugfix
