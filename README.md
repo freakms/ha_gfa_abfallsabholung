@@ -95,6 +95,8 @@ icon_size: 48                        # Emoji-Größe in Pixeln (16–120, defaul
 show_days_text: true                 # "Heute/Morgen/in X Tagen" anzeigen (default: true)
 show_date: true                      # Datum unter dem Badge anzeigen (default: true)
 max_items: 5                         # Maximale Kachelanzahl (default: 5)
+max_days: 1                          # Nur Termine in <= X Tagen zeigen (0 = nur heute, 1 = heute + morgen; default: aus)
+hide_when_empty: true                # Karte komplett ausblenden, wenn keine Termine passen (default: false)
 ```
 
 **Farbcodierung:**
