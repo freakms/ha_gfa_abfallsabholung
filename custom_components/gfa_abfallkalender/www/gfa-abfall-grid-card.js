@@ -11,8 +11,12 @@
  *   show_date: true                       # Datum anzeigen (default: true)
  *   show_days_text: true                  # "Heute/Morgen/in X Tagen" anzeigen (default: true)
  *   max_items: 5                          # max. Kacheln (default: 5)
+ *   max_days: 1                           # nur Termine in <= X Tagen zeigen (0 = nur heute, 1 = heute+morgen, default: aus)
+ *   hide_when_empty: true                 # Karte komplett ausblenden, wenn keine Termine passen (default: false)
+ *
+ * by freakms - ich schwöre feierlich ich bin ein tunichtgut
  */
-
+ 
 const DEFAULTS = {
   title: 'Nächste Abholtermine',
   columns: 3,
@@ -20,28 +24,30 @@ const DEFAULTS = {
   show_date: true,
   show_days_text: true,
   max_items: 5,
+  max_days: null,
+  hide_when_empty: false,
 };
-
+ 
 const URGENCY = {
   today:    { color: '#f44336', bg: 'rgba(244,67,54,0.12)',  badge: '🔴' },
   tomorrow: { color: '#ff9800', bg: 'rgba(255,152,0,0.12)',  badge: '🟠' },
   soon:     { color: '#f9a825', bg: 'rgba(249,168,37,0.12)', badge: '🟡' },
   normal:   { color: 'var(--primary-text-color)', bg: 'transparent', badge: '' },
 };
-
+ 
 function urgencyFor(days) {
   if (days === 0) return URGENCY.today;
   if (days === 1) return URGENCY.tomorrow;
   if (days <= 3)  return URGENCY.soon;
   return URGENCY.normal;
 }
-
+ 
 class GfaAbfallGridCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
   }
-
+ 
   setConfig(config) {
     if (!config.entity) {
       throw new Error(
@@ -51,18 +57,18 @@ class GfaAbfallGridCard extends HTMLElement {
     this._config = { ...DEFAULTS, ...config };
     this._render();
   }
-
+ 
   set hass(hass) {
     this._hass = hass;
     this._render();
   }
-
+ 
   _render() {
     if (!this._hass || !this._config) return;
-
+ 
     const cfg = this._config;
     const stateObj = this._hass.states[cfg.entity];
-
+ 
     if (!stateObj) {
       this.shadowRoot.innerHTML = `
         <ha-card>
@@ -72,11 +78,24 @@ class GfaAbfallGridCard extends HTMLElement {
         </ha-card>`;
       return;
     }
-
-    const pickups = (stateObj.attributes.pickups || []).slice(0, cfg.max_items);
+ 
+    const maxDays = (cfg.max_days === null || cfg.max_days === undefined || cfg.max_days === '')
+      ? null
+      : Number(cfg.max_days);
+    const pickups = (stateObj.attributes.pickups || [])
+      .filter(p => maxDays === null || Number.isNaN(maxDays) || p.tage_bis <= maxDays)
+      .slice(0, cfg.max_items);
+ 
+    // Karte komplett ausblenden, wenn nichts anliegt
+    if (cfg.hide_when_empty && pickups.length === 0) {
+      this.style.display = 'none';
+      this.shadowRoot.innerHTML = '';
+      return;
+    }
+    this.style.display = '';
     const cols    = Math.max(1, Math.min(cfg.columns, 6));
     const iconPx  = Math.max(16, Math.min(cfg.icon_size, 120));
-
+ 
     const css = `
       :host { display: block; }
       ha-card { padding: 16px 16px 12px; }
@@ -145,7 +164,7 @@ class GfaAbfallGridCard extends HTMLElement {
         font-size: 0.9em;
       }
     `;
-
+ 
     const tilesHtml = pickups.length === 0
       ? `<div class="empty">Keine bevorstehenden Abholtermine</div>`
       : pickups.map(p => {
@@ -161,7 +180,7 @@ class GfaAbfallGridCard extends HTMLElement {
               ${cfg.show_date ? `<div class="tile-date">${p.datum}</div>` : ''}
             </div>`;
         }).join('');
-
+ 
     this.shadowRoot.innerHTML = `
       <style>${css}</style>
       <ha-card>
@@ -171,16 +190,16 @@ class GfaAbfallGridCard extends HTMLElement {
         <div class="grid">${tilesHtml}</div>
       </ha-card>`;
   }
-
+ 
   getCardSize() {
     const cfg  = this._config || DEFAULTS;
     const rows = Math.ceil(cfg.max_items / Math.max(1, cfg.columns));
     return rows + 1;
   }
 }
-
+ 
 customElements.define('gfa-abfall-grid-card', GfaAbfallGridCard);
-
+ 
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:             'gfa-abfall-grid-card',
